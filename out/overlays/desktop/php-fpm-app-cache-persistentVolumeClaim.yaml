@@ -1,0 +1,9 @@
+#! php-fpm-app-cache-persistentVolumeClaim.yaml
+# Generated code, do not edit
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+    name: php-fpm-app-cache
+    namespace: oro-crm-docker-demo
+spec:
+    storageClassName: "hostpath" # see docker/desktop-storage-provisioner

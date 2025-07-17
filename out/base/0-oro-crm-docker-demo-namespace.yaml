@@ -1,0 +1,8 @@
+#! 0-oro-crm-docker-demo-namespace.yaml
+# Generated code, do not edit
+apiVersion: v1
+kind: Namespace
+metadata:
+    name: oro-crm-docker-demo
+    labels:
+        com.docker.compose.project: oro-crm-docker-demo
