@@ -1,0 +1,19 @@
+
+metadata:
+  name: web
+  namespace: oro-crm
+  labels:
+      app: oro-crm-web
+      tier: frontend
+      role: web
+image:
+  repository: nginx
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 80
+
+replicas: 1
+replicaCount: 1
