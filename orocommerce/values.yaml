@@ -4,6 +4,12 @@ global:
   namespace: "orocommerce"
   storageClass: ""
   
+  # Configuration base de données partagée
+  database:
+    name: "orocommerce"
+    username: "orocommerce"
+    password: "OroCommerce123!"
+  
   # Images officielles OroCommerce
   images:
     orocommerce: "oroinc/orocommerce-application:6.1.0"
@@ -130,6 +136,77 @@ monitoring:
       requests:
         cpu: 250m
         memory: 256Mi
+
+# Image configuration principale
+image:
+  repository: oroinc/orocommerce-application
+  tag: "6.1.0"
+  pullPolicy: IfNotPresent
+
+# Service principal (pour les tests)
+service:
+  type: ClusterIP
+  port: 80
+
+# ServiceAccount configuration
+serviceAccount:
+  create: true
+  automount: true
+  annotations: {}
+  name: ""
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations: {}
+  hosts:
+    - host: orocommerce.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: orocommerce-tls
+      hosts:
+        - orocommerce.local
+
+# Replica count
+replicaCount: 1
+
+# Image pull secrets
+imagePullSecrets: []
+
+# Pod annotations and labels
+podAnnotations: {}
+podLabels: {}
+
+# Security contexts
+podSecurityContext: {}
+securityContext: {}
+
+# Probes
+livenessProbe: {}
+readinessProbe: {}
+
+# Resources
+resources: {}
+
+# Volume mounts and volumes
+volumeMounts: []
+volumes: []
+
+# Node selection and affinity
+nodeSelector: {}
+affinity: {}
+tolerations: []
+
+# Autoscaling configuration (HPA)
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
 
 # Configuration commune
 secrets:

@@ -47,3 +47,15 @@ Selector labels
 app.kubernetes.io/name: {{ include "monitoring.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
+
+
+{{/*
+Create the name of the service account to use
+*/}}
+{{- define "monitoring.serviceAccountName" -}}
+{{- if .Values.serviceAccount.create }}
+{{- default (include "monitoring.fullname" .) .Values.serviceAccount.name }}
+{{- else }}
+{{- default "default" .Values.serviceAccount.name }}
+{{- end }}
+{{- end }}

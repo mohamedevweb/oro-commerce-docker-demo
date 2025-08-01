@@ -23,3 +23,14 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- define "web.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end -}}
+
+{{/*
+Create the name of the service account to use
+*/}}
+{{- define "web.serviceAccountName" -}}
+{{- if .Values.serviceAccount.create }}
+{{- default (include "web.fullname" .) .Values.serviceAccount.name }}
+{{- else }}
+{{- default "default" .Values.serviceAccount.name }}
+{{- end }}
+{{- end }}
