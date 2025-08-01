@@ -1,25 +1,35 @@
 apiVersion: v2
 name: orocommerce
-version: 0.1.0
-description: Umbrella chart for OroCommerce
+description: Migration OroCommerce vers Kubernetes - Projet EII 5
 type: application
+version: 0.1.0
+appVersion: "6.1.0"
 
 dependencies:
+  - name: frontend
+    version: "0.1.0"
+    repository: "file://charts/frontend"
+    condition: frontend.enabled
   - name: backend
-    version: 0.1.0
+    version: "0.1.0"
     repository: "file://charts/backend"
-  - name: web
-    version: 0.1.0
-    repository: "file://charts/web"
-  - name: cache
-    version: 0.1.0
-    repository: "file://charts/cache"
+    condition: backend.enabled
   - name: database
-    version: 0.1.0
+    version: "0.1.0"
     repository: "file://charts/database"
-  - name: search
-    version: 0.1.0
-    repository: "file://charts/search"
+    condition: database.enabled
   - name: monitoring
-    version: 0.1.0
+    version: "0.1.0"
     repository: "file://charts/monitoring"
+    condition: monitoring.enabled
+
+maintainers:
+  - name: "ESGI-M2-Student"
+    email: "student@esgi.fr"
+
+keywords:
+  - orocommerce
+  - kubernetes
+  - helm
+  - migration
+  - esgi

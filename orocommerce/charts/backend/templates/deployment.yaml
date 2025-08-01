@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "backend.fullname" . }}
+  namespace: {{ .Values.global.namespace | default "orocommerce" }}
   labels:
     {{- include "backend.labels" . | nindent 4 }}
 spec:
@@ -13,66 +14,71 @@ spec:
       {{- include "backend.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
-      annotations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
       labels:
-        {{- include "backend.labels" . | nindent 8 }}
-        {{- with .Values.podLabels }}
-        {{- toYaml . | nindent 8 }}
-        {{- end }}
+        {{- include "backend.selectorLabels" . | nindent 8 }}
     spec:
-      {{- with .Values.imagePullSecrets }}
-      imagePullSecrets:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      serviceAccountName: {{ include "backend.serviceAccountName" . }}
-      {{- with .Values.podSecurityContext }}
-      securityContext:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+      initContainers:
+      - name: wait-for-database
+        image: busybox:1.35
+        command: ['sh', '-c']
+        args:
+        - |
+          until nc -z {{ include "database.serviceName" . }} 5432; do
+            echo "Waiting for database..."
+            sleep 5
+          done
+          echo "Database is ready!"
+      - name: install-app
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        command: ['sh', '-c']
+        args:
+        - |
+          php bin/console oro:install --env=prod --timeout=0 --no-interaction --drop-database --force
+        env:
+        - name: ORO_DB_URL
+          value: "pgsql://{{ .Values.global.database.username }}:{{ .Values.global.database.password }}@{{ include "database.serviceName" . }}:5432/{{ .Values.global.database.name }}"
+        - name: ORO_ENV
+          value: "prod"
+        volumeMounts:
+        - name: orocommerce-app
+          mountPath: /var/www/oro
       containers:
-        - name: {{ .Chart.Name }}
-          {{- with .Values.securityContext }}
-          securityContext:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
-          ports:
-            - name: http
-              containerPort: {{ .Values.service.port }}
-              protocol: TCP
-          {{- with .Values.livenessProbe }}
-          livenessProbe:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
-          {{- with .Values.readinessProbe }}
-          readinessProbe:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
-          {{- with .Values.resources }}
-          resources:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
-          {{- with .Values.volumeMounts }}
-          volumeMounts:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
-      {{- with .Values.volumes }}
+      - name: php-fpm
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        command: ["php-fpm", "-F"]
+        ports:
+        - name: php-fpm
+          containerPort: 9000
+          protocol: TCP
+        livenessProbe:
+          tcpSocket:
+            port: php-fpm
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: php-fpm
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+        volumeMounts:
+        - name: orocommerce-app
+          mountPath: /var/www/oro
+        - name: uploads
+          mountPath: /var/www/oro/public/uploads
+        env:
+        - name: ORO_DB_URL
+          value: "pgsql://{{ .Values.global.database.username }}:{{ .Values.global.database.password }}@{{ include "database.serviceName" . }}:5432/{{ .Values.global.database.name }}"
+        - name: ORO_ENV
+          value: "prod"
+        - name: REDIS_URL
+          value: "redis://{{ include "cache.serviceName" . }}:6379/0"
       volumes:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+      - name: orocommerce-app
+        persistentVolumeClaim:
+          claimName: orocommerce-app-pvc
+      - name: uploads
+        persistentVolumeClaim:
+          claimName: orocommerce-uploads-pvc

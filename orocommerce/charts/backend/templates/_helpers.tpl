@@ -7,8 +7,6 @@ Expand the name of the chart.
 
 {{/*
 Create a default fully qualified app name.
-We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
-If release name contains chart name it will be used as a full name.
 */}}
 {{- define "backend.fullname" -}}
 {{- if .Values.fullnameOverride }}
@@ -51,12 +49,15 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
-Create the name of the service account to use
+Database service name
 */}}
-{{- define "backend.serviceAccountName" -}}
-{{- if .Values.serviceAccount.create }}
-{{- default (include "backend.fullname" .) .Values.serviceAccount.name }}
-{{- else }}
-{{- default "default" .Values.serviceAccount.name }}
+{{- define "database.serviceName" -}}
+{{- printf "%s-database" .Release.Name }}
 {{- end }}
+
+{{/*
+Cache service name
+*/}}
+{{- define "cache.serviceName" -}}
+{{- printf "%s-cache" .Release.Name }}
 {{- end }}

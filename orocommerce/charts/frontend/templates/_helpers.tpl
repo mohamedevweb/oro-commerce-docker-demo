@@ -1,14 +1,14 @@
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "monitoring.name" -}}
+{{- define "frontend.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Create a default fully qualified app name.
 */}}
-{{- define "monitoring.fullname" -}}
+{{- define "frontend.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -24,16 +24,16 @@ Create a default fully qualified app name.
 {{/*
 Create chart name and version as used by the chart label.
 */}}
-{{- define "monitoring.chart" -}}
+{{- define "frontend.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Common labels
 */}}
-{{- define "monitoring.labels" -}}
-helm.sh/chart: {{ include "monitoring.chart" . }}
-{{ include "monitoring.selectorLabels" . }}
+{{- define "frontend.labels" -}}
+helm.sh/chart: {{ include "frontend.chart" . }}
+{{ include "frontend.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -43,7 +43,14 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{/*
 Selector labels
 */}}
-{{- define "monitoring.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "monitoring.name" . }}
+{{- define "frontend.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "frontend.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
+
+{{/*
+Backend service name
+*/}}
+{{- define "backend.serviceName" -}}
+{{- printf "%s-backend" .Release.Name }}
+{{- end }} 
