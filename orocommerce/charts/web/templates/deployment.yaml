@@ -1,34 +1,96 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Values.metadata.name }}
-  labels:
-    app: {{ .Values.metadata.labels.app }}
-    tier: {{ .Values.metadata.labels.tier }}
-    role: {{ .Values.metadata.labels.role }}
-
+  name: {{ include "web.fullname" . }}
 spec:
-  replicas: {{ .Values.replicaCount }}
+  replicas: {{ .Values.web.replicas }}
   selector:
-      matchLabels:
-        app: {{ .Values.metadata.labels.app }}
-        tier: {{ .Values.metadata.labels.tier }}
-        role: {{ .Values.metadata.labels.role }}
+    matchLabels:
+      app: {{ include "web.name" . }}
   template:
     metadata:
       labels:
-        app: {{ .Values.metadata.labels.app }}
-        tier: {{ .Values.metadata.labels.tier }}
-        role: {{ .Values.metadata.labels.role }}
+        app: {{ include "web.name" . }}
     spec:
+      initContainers:
+        - name: wait-for-volume-init
+          image: busybox:1.35
+          command: ['sh', '-c', 'until test -f /var/www/oro/.volume-initialized; do echo "Waiting for volume initialization..."; sleep 10; done']
+          volumeMounts:
+            - name: oro-app
+              mountPath: /var/www/oro
+        - name: wait-for-php-fpm
+          image: busybox:1.35
+          command: ["sh", "-c", "until nc -z php-fpm-app 9000; do echo \"Waiting for php-fpm connection...\"; sleep 1; done"]
+        - name: nginx-init
+          image: "{{ .Values.initContainer.image.repository }}:{{ .Values.initContainer.image.tag }}"
+          command: 
+          - sh
+          - -c
+          - |
+            /usr/local/bin/docker-entrypoint.sh nginx-init && sed -i '/gridfs/d; /mongo/d' /opt/oro-nginx/etc/sites-available/*.conf
+          envFrom:
+            - configMapRef:
+                name: orocommerce-global-config
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /opt/oro-nginx
+            - name: oro-app
+              mountPath: /var/www/oro
+            - name: cache
+              mountPath: /var/www/oro/var/cache
+            - name: maintenance
+              mountPath: /var/www/oro/var/maintenance
+            - name: public-storage
+              mountPath: /var/www/oro/public/media
+            - name: private-storage
+              mountPath: /var/www/oro/var/data
       containers:
-        - name: {{ .Values.metadata.name }}
-          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+        - name: web
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args: ["nginx"]
           ports:
-            - containerPort: {{ .Values.service.port }}
-              name: http
+            - containerPort: 80
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: orocommerce-global-config
           resources:
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
             requests:
-              cpu: 100m
-              memory: 100Mi
+              cpu: "250m"
+              memory: "256Mi"
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /opt/oro-nginx
+            - name: oro-app
+              mountPath: /var/www/oro
+            - name: cache
+              mountPath: /var/www/oro/var/cache
+            - name: maintenance
+              mountPath: /var/www/oro/var/maintenance
+            - name: public-storage
+              mountPath: /var/www/oro/public/media
+            - name: private-storage
+              mountPath: /var/www/oro/var/data
+      volumes:
+        - name: nginx-config
+          emptyDir: {}
+        - name: oro-app
+          persistentVolumeClaim:
+            claimName: {{ .Values.web.volumes.oroApp.claimName }}
+        - name: cache
+          persistentVolumeClaim:
+            claimName: {{ .Values.web.volumes.cache.claimName }}
+        - name: maintenance
+          persistentVolumeClaim:
+            claimName: {{ .Values.web.volumes.maintenance.claimName }}
+        - name: public-storage
+          persistentVolumeClaim:
+            claimName: {{ .Values.web.volumes.publicStorage.claimName }}
+        - name: private-storage
+          persistentVolumeClaim:
+            claimName: {{ .Values.web.volumes.privateStorage.claimName }}

@@ -1,19 +1,30 @@
-
-metadata:
-  name: web
-  namespace: oro-crm
-  labels:
-      app: oro-crm-web
-      tier: frontend
-      role: web
 image:
-  repository: nginx
-  tag: latest
+  repository: oroinc/runtime
+  tag: 6.1-latest
   pullPolicy: IfNotPresent
+
+initContainer:
+  image:
+    repository: oroinc/orocommerce-application
+    tag: 6.1.0
+    
+  env:
+    APP_ENV: "prod"
 
 service:
   type: ClusterIP
   port: 80
 
-replicas: 1
-replicaCount: 1
+web:
+  replicas: 1
+  volumes:
+    oroApp:
+      claimName: "oro-app-orocommerce"
+    cache:
+      claimName: "cache-orocommerce"
+    maintenance:
+      claimName: "maintenance-orocommerce"
+    publicStorage:
+      claimName: "public-storage-orocommerce"
+    privateStorage:
+      claimName: "private-storage-orocommerce"
