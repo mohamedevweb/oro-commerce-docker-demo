@@ -60,3 +60,8 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/* Backend reference helpers for other charts consistency (optional) */}}
+{{- define "backend.serviceName" -}}
+{{- printf "%s-backend" .Release.Name }}
+{{- end }}

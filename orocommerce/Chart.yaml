@@ -18,6 +18,14 @@ dependencies:
     version: "0.1.0"
     repository: "file://charts/database"
     condition: database.enabled
+  - name: cache
+    version: "0.1.0"
+    repository: "file://charts/cache"
+    condition: cache.enabled
+  - name: search
+    version: "0.1.0"
+    repository: "file://charts/search"
+    condition: search.enabled
   - name: monitoring
     version: "0.1.0"
     repository: "file://charts/monitoring"

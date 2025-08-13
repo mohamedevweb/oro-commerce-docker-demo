@@ -63,6 +63,13 @@ Cache service name
 {{- end }}
 
 {{/*
+Search service name
+*/}}
+{{- define "search.serviceName" -}}
+{{- printf "%s-search" .Release.Name }}
+{{- end }}
+
+{{/*
 Create the name of the service account to use
 */}}
 {{- define "backend.serviceAccountName" -}}

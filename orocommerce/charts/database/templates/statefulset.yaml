@@ -17,53 +17,52 @@ spec:
         {{- include "database.selectorLabels" . | nindent 8 }}
     spec:
       containers:
-      - name: postgresql
+      - name: mysql
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         ports:
-        - name: postgresql
-          containerPort: 5432
+        - name: mysql
+          containerPort: 3306
           protocol: TCP
         env:
-        - name: POSTGRES_DB
+        - name: MYSQL_DATABASE
           value: {{ .Values.auth.database }}
-        - name: POSTGRES_USER
+        - name: MYSQL_USER
           value: {{ .Values.auth.username }}
-        - name: POSTGRES_PASSWORD
+        - name: MYSQL_PASSWORD
           valueFrom:
             secretKeyRef:
               name: {{ include "database.fullname" . }}-secret
               key: password
-        - name: PGDATA
-          value: /var/lib/postgresql/data/pgdata
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "database.fullname" . }}-secret
+              key: rootPassword
         livenessProbe:
           exec:
             command:
-            - pg_isready
-            - -U
-            - {{ .Values.auth.username }}
-            - -d
-            - {{ .Values.auth.database }}
+            - bash
+            - -ec
+            - mysqladmin ping -h 127.0.0.1 -uroot -p${MYSQL_ROOT_PASSWORD}
           initialDelaySeconds: 30
           periodSeconds: 10
         readinessProbe:
           exec:
             command:
-            - pg_isready
-            - -U
-            - {{ .Values.auth.username }}
-            - -d
-            - {{ .Values.auth.database }}
+            - bash
+            - -ec
+            - mysqladmin ping -h 127.0.0.1 -uroot -p${MYSQL_ROOT_PASSWORD}
           initialDelaySeconds: 5
           periodSeconds: 5
         resources:
           {{- toYaml .Values.resources | nindent 10 }}
         volumeMounts:
-        - name: postgresql-data
-          mountPath: /var/lib/postgresql/data
+        - name: mysql-data
+          mountPath: /var/lib/mysql
   volumeClaimTemplates:
   - metadata:
-      name: postgresql-data
+      name: mysql-data
     spec:
       accessModes: [ "ReadWriteOnce" ]
       {{- if .Values.global.storageClass }}

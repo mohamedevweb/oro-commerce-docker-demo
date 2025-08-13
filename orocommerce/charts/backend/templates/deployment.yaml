@@ -18,25 +18,68 @@ spec:
         {{- include "backend.selectorLabels" . | nindent 8 }}
     spec:
       initContainers:
+      - name: volume-init
+        image: {{ .Values.global.images.orocommerce | quote }}
+        # Copie le code de l'image d'application vers le PVC s'il est vide
+        command: ['sh', '-c']
+        args:
+        - |
+          set -e
+          if [ -z "$(ls -A /mnt/oro 2>/dev/null)" ]; then
+            echo "Copying application sources to PVC..."
+            cp -a /var/www/oro/. /mnt/oro/
+          else
+            echo "PVC already contains application sources; skipping copy."
+          fi
+        volumeMounts:
+        - name: orocommerce-app
+          mountPath: /mnt/oro
       - name: wait-for-database
         image: busybox:1.35
         command: ['sh', '-c']
         args:
         - |
-          until nc -z {{ include "database.serviceName" . }} 5432; do
+          until nc -z {{ include "database.serviceName" . }} 3306; do
             echo "Waiting for database..."
             sleep 5
           done
           echo "Database is ready!"
+      - name: wait-for-cache
+        image: busybox:1.35
+        command: ['sh', '-c']
+        args:
+        - |
+          until nc -z {{ include "cache.serviceName" . }} 6379; do
+            echo "Waiting for redis..."
+            sleep 3
+          done
+          echo "Redis is ready!"
+      - name: wait-for-search
+        image: busybox:1.35
+        command: ['sh', '-c']
+        args:
+        - |
+          until nc -z {{ include "search.serviceName" . }} 9200; do
+            echo "Waiting for elasticsearch..."
+            sleep 3
+          done
+          echo "Elasticsearch is ready!"
       - name: install-app
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        workingDir: /var/www/oro
         command: ['sh', '-c']
         args:
         - |
           php bin/console oro:install --env=prod --timeout=0 --no-interaction --drop-database --force
         env:
         - name: ORO_DB_URL
-          value: "pgsql://{{ .Values.global.database.username }}:{{ .Values.global.database.password }}@{{ include "database.serviceName" . }}:5432/{{ .Values.global.database.name }}"
+          value: "mysql://{{ .Values.global.database.username }}:{{ .Values.global.database.password }}@{{ include "database.serviceName" . }}:3306/{{ .Values.global.database.name }}"
+        - name: REDIS_URL
+          value: "redis://{{ include "cache.serviceName" . }}:6379/0"
+        - name: ELASTICSEARCH_URL
+          value: "{{ .Values.global.elasticsearch.scheme }}://{{ include "search.serviceName" . }}:{{ .Values.global.elasticsearch.port | default 9200 }}"
+        - name: DATABASE_URL
+          value: "mysql://{{ .Values.global.database.username }}:{{ .Values.global.database.password }}@{{ include "database.serviceName" . }}:3306/{{ .Values.global.database.name }}"
         - name: ORO_ENV
           value: "prod"
         volumeMounts:
@@ -70,11 +113,15 @@ spec:
           mountPath: /var/www/oro/public/uploads
         env:
         - name: ORO_DB_URL
-          value: "pgsql://{{ .Values.global.database.username }}:{{ .Values.global.database.password }}@{{ include "database.serviceName" . }}:5432/{{ .Values.global.database.name }}"
-        - name: ORO_ENV
-          value: "prod"
+          value: "mysql://{{ .Values.global.database.username }}:{{ .Values.global.database.password }}@{{ include "database.serviceName" . }}:3306/{{ .Values.global.database.name }}"
         - name: REDIS_URL
           value: "redis://{{ include "cache.serviceName" . }}:6379/0"
+        - name: ELASTICSEARCH_URL
+          value: "{{ .Values.global.elasticsearch.scheme }}://{{ include "search.serviceName" . }}:{{ .Values.global.elasticsearch.port | default 9200 }}"
+        - name: DATABASE_URL
+          value: "mysql://{{ .Values.global.database.username }}:{{ .Values.global.database.password }}@{{ include "database.serviceName" . }}:3306/{{ .Values.global.database.name }}"
+        - name: ORO_ENV
+          value: "prod"
       volumes:
       - name: orocommerce-app
         persistentVolumeClaim:

@@ -6,10 +6,10 @@ metadata:
   namespace: {{ .Values.global.namespace | default "orocommerce" }}
   labels:
     {{- include "frontend.labels" . | nindent 4 }}
+  {{- if .Values.ingress.annotations }}
   annotations:
-    kubernetes.io/ingress.class: {{ .Values.ingress.className }}
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    {{- toYaml .Values.ingress.annotations | nindent 4 }}
+  {{- end }}
 spec:
   {{- if .Values.ingress.tls.enabled }}
   tls:
@@ -18,7 +18,7 @@ spec:
       secretName: {{ .Values.ingress.tls.secretName }}
   {{- end }}
   rules:
-    - host: {{ .Values.ingress.host }}
+    - host: {{ .Values.ingress.host | default .Values.global.domain }}
       http:
         paths:
         - path: /

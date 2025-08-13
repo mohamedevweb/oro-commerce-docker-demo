@@ -3,6 +3,9 @@ global:
   domain: "orocommerce.local"
   namespace: "orocommerce"
   storageClass: ""
+  elasticsearch:
+    scheme: "http"
+    port: 9200
   
   # Configuration base de données partagée
   database:
@@ -47,8 +50,8 @@ backend:
   enabled: true
   replicaCount: 2
   image:
-    repository: oroinc/orocommerce-application
-    tag: "6.1.0"
+    repository: oroinc/runtime
+    tag: "6.1-latest"
     pullPolicy: IfNotPresent
   service:
     type: ClusterIP
@@ -72,12 +75,12 @@ backend:
 database:
   enabled: true
   image:
-    repository: postgres
-    tag: "15-alpine"
+    repository: mysql
+    tag: "8.0"
     pullPolicy: IfNotPresent
   service:
     type: ClusterIP
-    port: 5432
+    port: 3306
   persistence:
     enabled: true
     size: 10Gi
@@ -86,6 +89,7 @@ database:
     database: "orocommerce"
     username: "orocommerce"
     password: "OroCommerce123!"
+    rootPassword: "OroCommerceRoot123!"
   resources:
     limits:
       cpu: 1000m
@@ -93,6 +97,13 @@ database:
     requests:
       cpu: 500m
       memory: 512Mi
+
+# Enable Redis and Elasticsearch subcharts
+cache:
+  enabled: true
+
+search:
+  enabled: true
 
 # Monitoring: Prometheus + Grafana
 monitoring:
@@ -157,7 +168,7 @@ serviceAccount:
 
 # Ingress configuration
 ingress:
-  enabled: true
+  enabled: false
   className: "nginx"
   annotations: {}
   hosts:
