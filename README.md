@@ -11,6 +11,108 @@ Cette solution déploie OroCommerce sur Kubernetes avec les composants suivants 
 - **Database**: PostgreSQL (StatefulSet + PVC)
 - **Monitoring**: Prometheus + Grafana
 
+## 🗺️ Diagramme d’Architecture
+
+```mermaid
+flowchart LR
+  subgraph Registry
+    REG[Container Registry]
+  end
+
+  subgraph Ingress
+    ING[Ingress + TLS]
+  end
+
+  subgraph NS["Namespace: orocommerce"]
+    direction LR
+
+    %% FRONT
+    subgraph Frontend
+      NGINX_DEP["Deployment: Nginx"]
+      NGINX_SVC["Service: web (ClusterIP)"]
+      HPA_NGX["HPA (optional)"]
+    end
+
+    %% BACK
+    subgraph Backend
+      PHP_DEP["Deployment: PHP-FPM"]
+      PHP_SVC["Service: php-fpm (ClusterIP)"]
+      HPA_PHP["HPA"]
+      CFG_PHP["ConfigMap: php.ini"]
+      SEC_APP["Secret: app creds"]
+    end
+
+    %% DATA
+    subgraph Data
+      direction LR
+      subgraph PostgreSQL
+        PG_SS["StatefulSet: PostgreSQL"]
+        PG_SVC["Service: postgres"]
+        PG_PVC["PVC: postgres-data"]
+        PG_SEC["Secret: postgres creds"]
+      end
+
+      subgraph Redis
+        REDIS_SS["StatefulSet: Redis"]
+        REDIS_SVC["Service: redis"]
+        REDIS_PVC["PVC: redis-data"]
+      end
+
+      subgraph ES["Elasticsearch"]
+        ES_SS["StatefulSet: ES"]
+        ES_SVC["Service: es"]
+        ES_PVC["PVC: es-data"]
+      end
+    end
+
+    %% MONITORING
+    subgraph Monitoring
+      PROM["Prometheus"]
+      GRAF["Grafana"]
+      EXP_NGINX["Exporter: Nginx"]
+      EXP_PHP["Exporter: PHP-FPM"]
+      EXP_NODE["Node Exporter / KSM"]
+    end
+  end
+
+  %% App links
+  ING --> NGINX_SVC
+  NGINX_SVC --> PHP_SVC
+  PHP_SVC --> PG_SVC
+  PHP_SVC --> REDIS_SVC
+  PHP_SVC --> ES_SVC
+
+  %% Images -> workloads
+  REG --> NGINX_DEP
+  REG --> PHP_DEP
+  REG --> PG_SS
+  REG --> REDIS_SS
+  REG --> ES_SS
+
+  %% Workloads -> services
+  NGINX_DEP --> NGINX_SVC
+  PHP_DEP --> PHP_SVC
+  PG_SS --> PG_SVC
+  REDIS_SS --> REDIS_SVC
+  ES_SS --> ES_SVC
+
+  %% Storage
+  PG_SS --- PG_PVC
+  REDIS_SS --- REDIS_PVC
+  ES_SS --- ES_PVC
+
+  %% Config & secrets
+  PHP_DEP --- CFG_PHP
+  PHP_DEP --- SEC_APP
+  PG_SS --- PG_SEC
+
+  %% Monitoring
+  NGINX_DEP -.-> EXP_NGINX -.-> PROM
+  PHP_DEP -.-> EXP_PHP -.-> PROM
+  PROM --> GRAF
+  EXP_NODE --> PROM
+```
+
 ## 📋 Prérequis
 
 - Kubernetes 1.25+ (Minikube, K3s, ou cluster)
