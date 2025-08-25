@@ -1,9 +1,22 @@
 replicaCount: 1
 
 image:
-  repository: nginx
-  tag: "1.25-alpine"
+  repository: oroinc/runtime
+  tag: "6.1-latest"
   pullPolicy: IfNotPresent
 
 service:
-  port: 80
+  port: 9000
+
+env:
+  - name: ORO_ENV
+    value: "prod"
+  - name: ORO_LOG_PATH
+    value: "php://stderr"
+  - name: ORO_USER_RUNTIME
+    value: "www-data"
+
+podSecurityContext:
+  runAsUser: 33
+  runAsGroup: 33
+  fsGroup: 33

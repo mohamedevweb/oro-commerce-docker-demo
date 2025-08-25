@@ -9,6 +9,7 @@ Cette solution déploie OroCommerce sur Kubernetes avec les composants suivants 
 - **Frontend**: Nginx (Deployment + Service)
 - **Backend**: PHP-FPM (Deployment + HPA)
 - **Database**: PostgreSQL (StatefulSet + PVC)
+- **WebSockets**: 
 - **Monitoring**: Prometheus + Grafana
 
 ## 🗺️ Diagramme d’Architecture

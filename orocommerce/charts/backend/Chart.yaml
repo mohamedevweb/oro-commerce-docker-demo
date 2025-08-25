@@ -1,6 +1,6 @@
 apiVersion: v2
 name: backend
-description: Backend PHP-FPM pour OroCommerce - Deployment + HPA
+description: Backend PHP-FPM pour OroCommerce - Deployment
 type: application
 version: 0.1.0
 appVersion: "6.1.0"

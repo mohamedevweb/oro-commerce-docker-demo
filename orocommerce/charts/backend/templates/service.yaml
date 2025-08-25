@@ -2,14 +2,12 @@ apiVersion: v1
 kind: Service
 metadata:
   name: backend
-  labels:
-    app: backend
+  labels: { app: backend }
 spec:
   type: ClusterIP
+  selector: { app: backend }
   ports:
-    - port: {{ .Values.service.port }}
+    - name: php-fpm
+      port: {{ .Values.service.port }}     # 9000
       targetPort: php-fpm
       protocol: TCP
-      name: php-fpm
-  selector:
-    app: backend
