@@ -19,36 +19,22 @@ global:
     runtime: "oroinc/runtime:6.1-latest"
     database: "postgres:15-alpine"
 
-# Frontend: Nginx (Deployment + Service)
+# Frontend minimal
 frontend:
   enabled: true
-  replicaCount: 2
+  replicaCount: 1
   image:
-    repository: oroinc/runtime
-    tag: "6.1-latest"
+    repository: nginx
+    tag: "1.25-alpine"
     pullPolicy: IfNotPresent
   service:
     type: ClusterIP
     port: 80
-  ingress:
-    enabled: true
-    className: "nginx"
-    host: "orocommerce.local"
-    tls:
-      enabled: true
-      secretName: "orocommerce-tls"
-  resources:
-    limits:
-      cpu: 500m
-      memory: 512Mi
-    requests:
-      cpu: 250m
-      memory: 256Mi
 
 # Backend: PHP-FPM (Deployment + HPA)
 backend:
   enabled: true
-  replicaCount: 2
+  replicaCount: 1
   image:
     repository: oroinc/runtime
     tag: "6.1-latest"
@@ -81,22 +67,11 @@ database:
   service:
     type: ClusterIP
     port: 3306
-  persistence:
-    enabled: true
-    size: 10Gi
-    accessMode: ReadWriteOnce
   auth:
     database: "orocommerce"
     username: "orocommerce"
     password: "OroCommerce123!"
     rootPassword: "OroCommerceRoot123!"
-  resources:
-    limits:
-      cpu: 1000m
-      memory: 1Gi
-    requests:
-      cpu: 500m
-      memory: 512Mi
 
 # Enable Redis and Elasticsearch subcharts
 cache:
@@ -107,46 +82,7 @@ search:
 
 # Monitoring: Prometheus + Grafana
 monitoring:
-  enabled: true
-  prometheus:
-    enabled: true
-    image:
-      repository: prom/prometheus
-      tag: "v2.47.0"
-    service:
-      type: ClusterIP
-      port: 9090
-    persistence:
-      enabled: true
-      size: 5Gi
-    resources:
-      limits:
-        cpu: 500m
-        memory: 512Mi
-      requests:
-        cpu: 250m
-        memory: 256Mi
-  grafana:
-    enabled: true
-    image:
-      repository: grafana/grafana
-      tag: "10.1.0"
-    service:
-      type: ClusterIP
-      port: 3000
-    auth:
-      adminUser: "admin"
-      adminPassword: "admin123"
-    persistence:
-      enabled: true
-      size: 1Gi
-    resources:
-      limits:
-        cpu: 500m
-        memory: 512Mi
-      requests:
-        cpu: 250m
-        memory: 256Mi
+  enabled: false
 
 # Image configuration principale
 image:
@@ -161,7 +97,7 @@ service:
 
 # ServiceAccount configuration
 serviceAccount:
-  create: true
+  create: false
   automount: true
   annotations: {}
   name: ""
@@ -169,17 +105,6 @@ serviceAccount:
 # Ingress configuration
 ingress:
   enabled: false
-  className: "nginx"
-  annotations: {}
-  hosts:
-    - host: orocommerce.local
-      paths:
-        - path: /
-          pathType: Prefix
-  tls:
-    - secretName: orocommerce-tls
-      hosts:
-        - orocommerce.local
 
 # Replica count
 replicaCount: 1

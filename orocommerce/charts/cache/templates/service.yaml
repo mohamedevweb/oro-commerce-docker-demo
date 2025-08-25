@@ -1,15 +1,15 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "cache.fullname" . }}
+  name: cache
   labels:
-    {{- include "cache.labels" . | nindent 4 }}
+    app: cache
 spec:
-  type: {{ .Values.service.type }}
+  type: ClusterIP
   ports:
     - port: {{ .Values.service.port }}
-      targetPort: http
+      targetPort: redis
       protocol: TCP
-      name: http
+      name: redis
   selector:
-    {{- include "cache.selectorLabels" . | nindent 4 }}
+    app: cache

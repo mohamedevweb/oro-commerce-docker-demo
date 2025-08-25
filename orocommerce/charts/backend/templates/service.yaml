@@ -1,16 +1,15 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "backend.fullname" . }}
-  namespace: {{ .Values.global.namespace | default "orocommerce" }}
+  name: backend
   labels:
-    {{- include "backend.labels" . | nindent 4 }}
+    app: backend
 spec:
-  type: {{ .Values.service.type }}
+  type: ClusterIP
   ports:
     - port: {{ .Values.service.port }}
       targetPort: php-fpm
       protocol: TCP
       name: php-fpm
   selector:
-    {{- include "backend.selectorLabels" . | nindent 4 }}
+    app: backend
